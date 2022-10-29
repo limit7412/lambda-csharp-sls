@@ -24,7 +24,7 @@ class SampleLambda : Serverless.Lambda
         ["body"] = new JObject
         {
           ["msg"] = "でしょうねミスター・サーバーレス",
-          ["event"] = input.GetValue("body"),
+          ["event"] = JObject.Parse(input.GetValue("body").ToString()),
         }.ToString(),
       };
     });

@@ -4,3 +4,4 @@ obj/
 bin/
 
 .serverless/
+.vs/

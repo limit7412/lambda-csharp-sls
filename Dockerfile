@@ -7,7 +7,7 @@ RUN dotnet publish -c Release
 RUN mv bin/Release/net6.0/linux-x64/publish/bootstrap bootstrap
 RUN chmod +x bootstrap
 
-FROM public.ecr.aws/lambda/provided:al2
+FROM public.ecr.aws/lambda/provided:latest
 
 COPY --from=build-image /work/bootstrap /var/runtime/
 

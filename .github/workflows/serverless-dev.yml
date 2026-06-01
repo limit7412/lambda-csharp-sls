@@ -2,6 +2,11 @@ name: serverless-dev
 
 on: pull_request
 
+# OIDC で AWS の IAM ロールを AssumeRole するために id-token の発行権限が必要。
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy:
     name: deploy
@@ -12,19 +17,20 @@ jobs:
           echo "::add-mask::${{ secrets.API_URL_MASK }}"
 
       - name: setup node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
 
       - name: install sls
         run: npm i -g serverless
 
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # アクセスキー方式から OIDC(AssumeRoleWithWebIdentity)方式へ移行。
+          # secrets.AWS_ROLE_ARN には ga-deploy-oicd_lambda-csharp-sls の ARN を設定する。
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ap-northeast-1
 
       - name: install plugins

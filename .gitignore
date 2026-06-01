@@ -7,3 +7,8 @@ bin/
 .vs/
 
 .vscode/
+
+# zip 版でビルド時に生成される成果物・依存
+node_modules/
+bootstrap
+env.yml

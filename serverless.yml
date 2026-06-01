@@ -1,40 +1,96 @@
 service: lambda-csharp-sls
 
+plugins:
+  - serverless-plugin-scripts
+
 custom:
-  defaultAccount: dummy
-  defaultDigest: dummy
   defaultStage: dev
+  scripts:
+    hooks:
+      # sls deploy / sls package 時に bootstrap を発行(publish)する。
+      # macOS / Apple Silicon でも Lambda(provided.al2, x86_64) 互換の
+      # 自己完結バイナリを得るため、linux/amd64 を明示して Docker でビルドする。
+      # RuntimeIdentifier(linux-x64) 指定 + PublishSingleFile により
+      # .NET ランタイム同梱の単一実行ファイル bootstrap が生成される。
+      # chmod はコンテナ内で実行する。Linux ランナーでは生成物の所有者が
+      # コンテナ外の runner ユーザーと異なり chmod できないことがあるため。
+      'before:package:createDeploymentArtifacts': |
+        docker run --rm --platform linux/amd64 -v "$PWD":/work -w /work bitnami/dotnet-sdk:latest \
+          sh -c "dotnet publish -c Release && cp bin/Release/net6.0/linux-x64/publish/bootstrap bootstrap && chmod +x bootstrap"
 
 provider:
   name: aws
-  runtime: provided
+  runtime: provided.al2
   timeout: 20
   region: ap-northeast-1
-  ecr:
-    images:
-      appImage:
-        path: ./
-        platform: linux/amd64
   stage: ${opt:stage, self:custom.defaultStage}
   # environment:
   #   ${file(./env.yml)}
 
+package:
+  patterns:
+    - '!./**'
+    - bootstrap
+
 functions:
+  # provided ランタイムはパッケージ直下の bootstrap を実行する。
+  # handler 文字列は _HANDLER として渡され、src/Main.cs の
+  # Handler("...") と一致させることで処理を振り分ける。
   hello:
-    image:
-      name: appImage
-      command:
-        - hello
+    handler: hello
     events:
       - http:
           path: test
           method: get
   world:
-    image:
-      name: appImage
-      command:
-        - world
+    handler: world
     events:
       - http:
           path: test
           method: post
+
+# =====================================================================
+# Docker(ECR イメージ)版【旧構成・参考用にコメントアウトで残す】
+# ---------------------------------------------------------------------
+# Dockerfile から ECR イメージをビルドし、image.command で各関数の
+# _HANDLER を切り替えていた。zip 版へ移行したため無効化。
+# ---------------------------------------------------------------------
+# custom:
+#   defaultAccount: dummy
+#   defaultDigest: dummy
+#   defaultStage: dev
+#
+# provider:
+#   name: aws
+#   runtime: provided
+#   timeout: 20
+#   region: ap-northeast-1
+#   ecr:
+#     images:
+#       appImage:
+#         path: ./
+#         platform: linux/amd64
+#   stage: ${opt:stage, self:custom.defaultStage}
+#   # environment:
+#   #   ${file(./env.yml)}
+#
+# functions:
+#   hello:
+#     image:
+#       name: appImage
+#       command:
+#         - hello
+#     events:
+#       - http:
+#           path: test
+#           method: get
+#   world:
+#     image:
+#       name: appImage
+#       command:
+#         - world
+#     events:
+#       - http:
+#           path: test
+#           method: post
+# =====================================================================

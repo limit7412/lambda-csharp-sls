@@ -8,19 +8,20 @@ custom:
   scripts:
     hooks:
       # sls deploy / sls package 時に bootstrap を発行(publish)する。
-      # macOS / Apple Silicon でも Lambda(provided.al2023, x86_64) 互換の
-      # 自己完結バイナリを得るため、linux/amd64 を明示して Docker でビルドする。
-      # RuntimeIdentifier(linux-x64) 指定 + PublishSingleFile により
+      # macOS / Apple Silicon でも Lambda(provided.al2023, arm64) 互換の
+      # 自己完結バイナリを得るため、linux/arm64 を明示して Docker でビルドする。
+      # RuntimeIdentifier(linux-arm64) 指定 + PublishSingleFile により
       # .NET ランタイム同梱の単一実行ファイル bootstrap が生成される。
       # chmod はコンテナ内で実行する。Linux ランナーでは生成物の所有者が
       # コンテナ外の runner ユーザーと異なり chmod できないことがあるため。
       'before:package:createDeploymentArtifacts': |
-        docker run --rm --platform linux/amd64 -v "$PWD":/work -w /work bitnami/dotnet-sdk:latest \
-          sh -c "dotnet publish -c Release && cp bin/Release/net6.0/linux-x64/publish/bootstrap bootstrap && chmod +x bootstrap"
+        docker run --rm --platform linux/arm64 -v "$PWD":/work -w /work bitnami/dotnet-sdk:latest \
+          sh -c "dotnet publish -c Release && cp bin/Release/net6.0/linux-arm64/publish/bootstrap bootstrap && chmod +x bootstrap"
 
 provider:
   name: aws
   runtime: provided.al2023
+  architecture: arm64
   timeout: 20
   region: ap-northeast-1
   stage: ${opt:stage, self:custom.defaultStage}
@@ -69,7 +70,7 @@ functions:
 #     images:
 #       appImage:
 #         path: ./
-#         platform: linux/amd64
+#         platform: linux/arm64
 #   stage: ${opt:stage, self:custom.defaultStage}
 #   # environment:
 #   #   ${file(./env.yml)}

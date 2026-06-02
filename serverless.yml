@@ -8,7 +8,7 @@ custom:
   scripts:
     hooks:
       # sls deploy / sls package 時に bootstrap を発行(publish)する。
-      # macOS / Apple Silicon でも Lambda(provided.al2, x86_64) 互換の
+      # macOS / Apple Silicon でも Lambda(provided.al2023, x86_64) 互換の
       # 自己完結バイナリを得るため、linux/amd64 を明示して Docker でビルドする。
       # RuntimeIdentifier(linux-x64) 指定 + PublishSingleFile により
       # .NET ランタイム同梱の単一実行ファイル bootstrap が生成される。
@@ -20,7 +20,7 @@ custom:
 
 provider:
   name: aws
-  runtime: provided.al2
+  runtime: provided.al2023
   timeout: 20
   region: ap-northeast-1
   stage: ${opt:stage, self:custom.defaultStage}
